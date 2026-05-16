@@ -8,6 +8,8 @@ spring:
 service:
   market-data:
     url: http://localhost:8182
+  indicator:
+    url: http://localhost:8183
 
 logging:
   level:

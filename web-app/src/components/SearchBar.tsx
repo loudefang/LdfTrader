@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '../i18n';
 import type { KlineQuery, Market, Period } from '../types';
 
 function formatDate(d: Date): string {
@@ -10,7 +11,7 @@ function formatDate(d: Date): string {
 
 function defaultStartDate(): string {
   const d = new Date();
-  d.setFullYear(d.getFullYear() - 5);
+  d.setFullYear(d.getFullYear() - 2);
   return formatDate(d);
 }
 
@@ -24,11 +25,12 @@ interface Props {
 }
 
 export default function SearchBar({ onSearch, loading }: Props) {
-  const [symbol, setSymbol] = useState('');
-  const [market, setMarket] = useState<Market>('us');
-  const [period, setPeriod] = useState<Period>('daily');
-  const [startDate, setStartDate] = useState(defaultStartDate());
-  const [endDate, setEndDate] = useState(defaultEndDate());
+  const { t } = useT();
+  const [symbol, setSymbol]       = useState('');
+  const [market, setMarket]       = useState<Market>('us');
+  const [period, setPeriod]       = useState<Period>('daily');
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate]     = useState(defaultEndDate);
 
   const handleSubmit = () => {
     const trimmed = symbol.trim().toUpperCase();
@@ -44,41 +46,43 @@ export default function SearchBar({ onSearch, loading }: Props) {
     <div className="panel">
       <div className="search-bar">
         <div className="field">
-          <label>股票代码</label>
+          <label>{t.search.symbol}</label>
           <input
             type="text"
-            placeholder="输入代码"
+            placeholder={t.search.symbolPlaceholder}
             value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
+            onChange={e => setSymbol(e.target.value)}
             onKeyDown={handleKeyDown}
           />
         </div>
         <div className="field">
-          <label>市场</label>
-          <select value={market} onChange={(e) => setMarket(e.target.value as Market)}>
-            <option value="us">美股</option>
+          <label>{t.search.market}</label>
+          <select value={market} onChange={e => setMarket(e.target.value as Market)}>
+            {Object.entries(t.search.markets).map(([v, label]) => (
+              <option key={v} value={v}>{label}</option>
+            ))}
           </select>
         </div>
         <div className="field">
-          <label>周期</label>
-          <select value={period} onChange={(e) => setPeriod(e.target.value as Period)}>
-            <option value="daily">日K</option>
-            <option value="weekly">周K</option>
-            <option value="monthly">月K</option>
+          <label>{t.search.period}</label>
+          <select value={period} onChange={e => setPeriod(e.target.value as Period)}>
+            {Object.entries(t.search.periods).map(([v, label]) => (
+              <option key={v} value={v}>{label}</option>
+            ))}
           </select>
         </div>
         <div className="field">
-          <label>开始日期</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <label>{t.search.startDate}</label>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
         </div>
         <div className="field">
-          <label>结束日期</label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <label>{t.search.endDate}</label>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
         </div>
         <div className="field">
           <label>&nbsp;</label>
           <button className="btn-primary-blue" disabled={loading} onClick={handleSubmit}>
-            {loading ? '查询中...' : '查询'}
+            {loading ? t.search.querying : t.search.query}
           </button>
         </div>
       </div>

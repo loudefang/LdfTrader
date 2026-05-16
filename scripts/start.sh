@@ -112,6 +112,18 @@ start_timescaledb() {
     else
         ok "schema 已存在，跳过初始化"
     fi
+
+    local check_ind_sql="SELECT to_regclass('public.ma_daily');"
+    local ind_exists
+    ind_exists=$(docker exec "$DB_CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -tAc "$check_ind_sql" 2>/dev/null || echo "")
+    if [ -z "$ind_exists" ] || [ "$ind_exists" = "" ]; then
+        info "初始化 indicators schema..."
+        docker exec -i "$DB_CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" \
+            < "$ROOT_DIR/db/init/02_init_indicators.sql" >/dev/null
+        ok "indicators schema 初始化完成"
+    else
+        ok "indicators schema 已存在，跳过初始化"
+    fi
 }
 
 # --- 2. Maven 编译 ---
@@ -214,6 +226,7 @@ echo "========================================="
 start_timescaledb
 maven_build
 start_spring_service "market-data-service" 8182
+start_spring_service "indicator-service"   8183
 start_spring_service "web-service"         8181
 if [ "$START_FRONTEND" = "true" ]; then
     start_frontend
@@ -225,6 +238,7 @@ ok "全部服务启动完成"
 echo "========================================="
 echo "  TimescaleDB : localhost:${DB_PORT}"
 echo "  market-data : http://localhost:8182"
+echo "  indicator   : http://localhost:8183"
 echo "  web-service : http://localhost:8181"
 if [ "$START_FRONTEND" = "true" ]; then
     echo "  web-app     : http://localhost:3000"

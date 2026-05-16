@@ -1,8 +1,5 @@
+import { useT } from '../i18n';
 import type { StockTab } from '../types';
-
-const MARKET_LABEL: Record<string, string> = {
-  us: '美股',
-};
 
 interface Props {
   tabs: StockTab[];
@@ -16,29 +13,26 @@ export function tabKey(t: Pick<StockTab, 'symbol' | 'market' | 'period'>): strin
 }
 
 export default function StockTabs({ tabs, activeKey, onSelect, onClose }: Props) {
+  const { t } = useT();
   if (tabs.length === 0) return null;
 
   return (
     <div className="panel">
       <div className="stock-tabs">
-        {tabs.map((t) => {
-          const key = tabKey(t);
+        {tabs.map(tab => {
+          const key = tabKey(tab);
           const active = key === activeKey;
+          const marketLabel = t.search.markets[tab.market] ?? tab.market;
           return (
             <div
               key={key}
               className={`stock-tab ${active ? 'active' : ''}`}
               onClick={() => onSelect(key)}
             >
-              <span>
-                {t.symbol} {MARKET_LABEL[t.market] ?? t.market}
-              </span>
+              <span>{tab.symbol} {marketLabel}</span>
               <span
                 className="close"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClose(key);
-                }}
+                onClick={e => { e.stopPropagation(); onClose(key); }}
               >
                 ×
               </span>

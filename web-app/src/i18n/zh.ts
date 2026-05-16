@@ -1,0 +1,53 @@
+const zh = {
+  nav: {
+    brand: 'Ldf Trader',
+    kline: 'K线行情',
+    strategy: '策略管理',
+    trading: '实盘交易',
+    account: '账户',
+    comingSoon: '即将开放',
+    langSwitch: 'EN',
+  },
+  search: {
+    symbol: '股票代码',
+    symbolPlaceholder: '输入代码',
+    market: '市场',
+    period: '周期',
+    startDate: '开始日期',
+    endDate: '结束日期',
+    query: '查询',
+    querying: '查询中...',
+    markets: { us: '美股' } as Record<string, string>,
+    periods: { daily: '日K', weekly: '周K', monthly: '月K' } as Record<string, string>,
+  },
+  chart: {
+    noData: '请输入股票代码开始查询',
+    loading: '正在加载行情数据...',
+    total: (n: number) => `共 ${n} 条数据`,
+    backtest: '回测',
+    kline: 'K线',
+    volume: '成交量',
+    ma: 'MA',
+    boll: 'BOLL',
+    macd: 'MACD',
+    rsi: 'RSI',
+  },
+  indicator: {
+    bollUpper: '上轨',
+    bollMiddle: '中轨',
+    bollLower: '下轨',
+    macdDif: 'DIF',
+    macdDea: 'DEA',
+    macdHist: '柱',
+  },
+  tooltip: {
+    open: '开',
+    close: '收',
+    high: '高',
+    low: '低',
+    volume: '量',
+    boll: '布林',
+  },
+};
+
+export default zh;

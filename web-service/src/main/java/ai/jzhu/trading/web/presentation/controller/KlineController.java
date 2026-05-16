@@ -1,6 +1,6 @@
 package ai.jzhu.trading.web.presentation.controller;
 
-import ai.jzhu.trading.common.dto.KlineResponse;
+import ai.jzhu.trading.common.dto.KlineWithIndicatorsResponse;
 import ai.jzhu.trading.web.application.usecase.GetKlineUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/web")
@@ -20,7 +19,7 @@ public class KlineController {
     private final GetKlineUseCase getKlineUseCase;
 
     @GetMapping("/kline")
-    public List<KlineResponse> getKline(
+    public KlineWithIndicatorsResponse getKline(
             @RequestParam String symbol,
             @RequestParam(defaultValue = "us") String market,
             @RequestParam(defaultValue = "daily") String period,

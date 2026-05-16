@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import type { KlineQuery, KlineResponse, ErrorResponse } from '../types';
+import type { KlineQuery, KlineWithIndicatorsResponse, ErrorResponse } from '../types';
 
 const api = axios.create({
   baseURL: 'http://localhost:8181/api/web',
@@ -9,9 +9,9 @@ const api = axios.create({
   },
 });
 
-export async function fetchKline(query: KlineQuery): Promise<KlineResponse[]> {
+export async function fetchKline(query: KlineQuery): Promise<KlineWithIndicatorsResponse> {
   try {
-    const { data } = await api.get<KlineResponse[]>('/kline', {
+    const { data } = await api.get<KlineWithIndicatorsResponse>('/kline', {
       params: {
         symbol: query.symbol,
         market: query.market,

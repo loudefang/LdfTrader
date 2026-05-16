@@ -119,11 +119,13 @@ echo "========================================="
 
 stop_by_pidfile "web-app"            || stop_by_port "web-app"            3000
 stop_by_pidfile "web-service"        || stop_by_port "web-service"        8181
+stop_by_pidfile "indicator-service"  || stop_by_port "indicator-service"  8183
 stop_by_pidfile "market-data-service"|| stop_by_port "market-data-service" 8182
 
 # 端口兜底
 stop_by_port "web-app"             3000
 stop_by_port "web-service"         8181
+stop_by_port "indicator-service"   8183
 stop_by_port "market-data-service" 8182
 
 if [ "$STOP_DB" = "true" ]; then

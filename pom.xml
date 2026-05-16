@@ -24,6 +24,7 @@
         <module>strategy-core</module>
         <module>market-data-service</module>
         <module>web-service</module>
+        <module>indicator-service</module>
     </modules>
 
     <properties>

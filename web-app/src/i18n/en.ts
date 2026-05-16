@@ -1,0 +1,53 @@
+const en = {
+  nav: {
+    brand: 'Ldf Trader',
+    kline: 'Charts',
+    strategy: 'Strategy',
+    trading: 'Live Trading',
+    account: 'Account',
+    comingSoon: 'Coming Soon',
+    langSwitch: '中',
+  },
+  search: {
+    symbol: 'Symbol',
+    symbolPlaceholder: 'Enter symbol',
+    market: 'Market',
+    period: 'Period',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    query: 'Search',
+    querying: 'Loading...',
+    markets: { us: 'US Stock' } as Record<string, string>,
+    periods: { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' } as Record<string, string>,
+  },
+  chart: {
+    noData: 'Enter a symbol to start',
+    loading: 'Loading market data...',
+    total: (n: number) => `${n} bars`,
+    backtest: 'Backtest',
+    kline: 'K-Line',
+    volume: 'Volume',
+    ma: 'MA',
+    boll: 'BOLL',
+    macd: 'MACD',
+    rsi: 'RSI',
+  },
+  indicator: {
+    bollUpper: 'Upper',
+    bollMiddle: 'Middle',
+    bollLower: 'Lower',
+    macdDif: 'DIF',
+    macdDea: 'DEA',
+    macdHist: 'Hist',
+  },
+  tooltip: {
+    open: 'O',
+    close: 'C',
+    high: 'H',
+    low: 'L',
+    volume: 'Vol',
+    boll: 'Boll',
+  },
+};
+
+export default en;
