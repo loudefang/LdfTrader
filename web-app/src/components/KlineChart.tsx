@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import { useT } from '../i18n';
-import type { KlineResponse, IndicatorResponse, ChartVisibility, IndicatorConfig } from '../types';
+import type { KlineResponse, IndicatorResponse, ChartVisibility, IndicatorConfig, BacktestTradeDetail } from '../types';
 
 const COLOR_UP     = '#ef4444';
 const COLOR_DOWN   = '#22c55e';
@@ -37,9 +37,10 @@ interface Props {
   visibility: ChartVisibility;
   config: IndicatorConfig;
   onConfigChange: (config: IndicatorConfig) => void;
+  trades?: BacktestTradeDetail[];
 }
 
-export default function KlineChart({ symbol, klines, indicators, visibility, config, onConfigChange }: Props) {
+export default function KlineChart({ symbol, klines, indicators, visibility, config, onConfigChange, trades }: Props) {
   const { t } = useT();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef     = useRef<echarts.ECharts | null>(null);
@@ -67,6 +68,45 @@ export default function KlineChart({ symbol, klines, indicators, visibility, con
       value: k.volume,
       itemStyle: { color: k.close >= k.open ? COLOR_UP : COLOR_DOWN },
     }));
+
+    // ── Backtest markPoint / markArea ─────────────────────────────────────────
+    const mpData: object[] = [];
+    const maData2: [object, object][] = [];
+    if (trades && trades.length > 0) {
+      const MARK_COLOR = '#f5c842';
+      for (const tr of trades) {
+        if (tr.openIndex < 0 || tr.openIndex >= klines.length) continue;
+        const openK = klines[tr.openIndex];
+        mpData.push({
+          coord: [tr.openDate, openK.low],
+          symbolRotate: 0,
+          itemStyle: { color: MARK_COLOR },
+          label: {
+            formatter: t.backtest.openLong + ' ' + tr.openPrice.toFixed(2),
+            position: 'bottom',
+            color: MARK_COLOR,
+            fontSize: 10,
+            distance: 4,
+          },
+        });
+        if (tr.closed && tr.closeIndex >= 0 && tr.closeIndex < klines.length && tr.closeDate) {
+          const closeK = klines[tr.closeIndex];
+          mpData.push({
+            coord: [tr.closeDate, closeK.high],
+            symbolRotate: 180,
+            itemStyle: { color: MARK_COLOR },
+            label: {
+              formatter: t.backtest.closeLong + ' ' + tr.closePrice.toFixed(2),
+              position: 'top',
+              color: MARK_COLOR,
+              fontSize: 10,
+              distance: 4,
+            },
+          });
+          maData2.push([{ xAxis: tr.openDate }, { xAxis: tr.closeDate }]);
+        }
+      }
+    }
 
     const { macd, ma, rsi, boll } = indicators;
     const maDataMap: Record<string, (number | null)[]> = {
@@ -266,6 +306,16 @@ export default function KlineChart({ symbol, klines, indicators, visibility, con
             color: COLOR_UP, color0: COLOR_DOWN,
             borderColor: COLOR_UP, borderColor0: COLOR_DOWN,
           },
+          markPoint: {
+            symbol: 'triangle',
+            symbolSize: 12,
+            data: mpData,
+          },
+          markArea: {
+            silent: true,
+            itemStyle: { color: 'rgba(245, 200, 66, 0.07)' },
+            data: maData2,
+          },
         },
         ...MA_META.map(c => ({
           name: c.name,
@@ -339,7 +389,7 @@ export default function KlineChart({ symbol, klines, indicators, visibility, con
     };
 
     chart.setOption(option, true);
-  }, [symbol, klines, indicators, visibility, config, t]);
+  }, [symbol, klines, indicators, visibility, config, trades, t]);
 
   const toggleMaLine = (line: string) => {
     const next = config.maLines.includes(line)

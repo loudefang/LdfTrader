@@ -48,6 +48,15 @@ const en = {
     volume: 'Vol',
     boll: 'Boll',
   },
+  backtest: {
+    strategy: 'Strategy',
+    run: 'Run Backtest',
+    clear: 'Clear',
+    loading: 'Running...',
+    tradesCount: (n: number) => `${n} trades`,
+    openLong: 'Buy',
+    closeLong: 'Sell',
+  },
 };
 
 export default en;

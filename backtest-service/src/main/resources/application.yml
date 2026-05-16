@@ -1,18 +1,16 @@
 server:
-  port: 8181
+  port: 8185
 
 spring:
   application:
-    name: web-service
+    name: backtest-service
 
 service:
   market-data:
     url: http://localhost:8182
   indicator:
     url: http://localhost:8183
-  backtest:
-    url: http://localhost:8185
 
 logging:
   level:
-    ai.jzhu.trading.web: INFO
+    ai.jzhu.trading.backtest: INFO

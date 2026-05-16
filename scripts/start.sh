@@ -227,6 +227,7 @@ start_timescaledb
 maven_build
 start_spring_service "market-data-service" 8182
 start_spring_service "indicator-service"   8183
+start_spring_service "backtest-service"    8185
 start_spring_service "web-service"         8181
 if [ "$START_FRONTEND" = "true" ]; then
     start_frontend
@@ -239,6 +240,7 @@ echo "========================================="
 echo "  TimescaleDB : localhost:${DB_PORT}"
 echo "  market-data : http://localhost:8182"
 echo "  indicator   : http://localhost:8183"
+echo "  backtest    : http://localhost:8185"
 echo "  web-service : http://localhost:8181"
 if [ "$START_FRONTEND" = "true" ]; then
     echo "  web-app     : http://localhost:3000"

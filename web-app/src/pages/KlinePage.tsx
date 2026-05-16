@@ -2,9 +2,12 @@ import { useState } from 'react';
 import SearchBar from '../components/SearchBar';
 import StockTabs, { tabKey } from '../components/StockTabs';
 import KlineChart from '../components/KlineChart';
+import BacktestPanel from '../components/BacktestPanel';
 import { fetchKline } from '../api';
 import { useT } from '../i18n';
-import type { KlineQuery, StockTab, ChartVisibility, IndicatorConfig } from '../types';
+import type {
+  KlineQuery, StockTab, ChartVisibility, IndicatorConfig, SimpleBacktestResponse,
+} from '../types';
 import { DEFAULT_VISIBILITY, DEFAULT_CONFIG } from '../types';
 
 const PREFS_KEY = 'ldftrader_chart_prefs';
@@ -41,11 +44,15 @@ export default function KlinePage() {
   const [prefs, setPrefs] = useState(loadPrefs);
   const { visibility, config } = prefs;
 
+  const [backtestOpen,   setBacktestOpen]   = useState(false);
+  const [backtestResult, setBacktestResult] = useState<SimpleBacktestResponse | null>(null);
+
   const activeTab = tabs.find(tab => tabKey(tab) === activeKey) ?? null;
 
   const handleSearch = async (query: KlineQuery) => {
     setLoading(true);
     setError(null);
+    setBacktestResult(null);
     try {
       const result = await fetchKline(query);
       const newTab: StockTab = {
@@ -72,6 +79,8 @@ export default function KlinePage() {
       const next = prev.filter(tab => tabKey(tab) !== key);
       if (key === activeKey) {
         setActiveKey(next.length ? tabKey(next[next.length - 1]) : null);
+        setBacktestOpen(false);
+        setBacktestResult(null);
       }
       return next;
     });
@@ -125,10 +134,25 @@ export default function KlinePage() {
           </div>
           <div className="filter-divider" />
           <span className="toolbar-count">{t.chart.total(activeTab.totalCount)}</span>
-          <button className="btn-backtest" disabled title={t.nav.comingSoon}>
+          <button
+            className={`btn-backtest${backtestOpen ? ' active' : ''}`}
+            onClick={() => setBacktestOpen(o => !o)}
+          >
             {t.chart.backtest}
           </button>
         </div>
+      )}
+
+      {activeTab && backtestOpen && (
+        <BacktestPanel
+          symbol={activeTab.symbol}
+          market={activeTab.market}
+          period={activeTab.period}
+          startDate={activeTab.startDate}
+          endDate={activeTab.endDate}
+          result={backtestResult}
+          onResult={setBacktestResult}
+        />
       )}
 
       <div className="chart-wrapper">
@@ -145,6 +169,7 @@ export default function KlinePage() {
             visibility={visibility}
             config={config}
             onConfigChange={handleConfigChange}
+            trades={backtestResult?.trades}
           />
         ) : (
           <div className="chart-empty">{t.chart.noData}</div>

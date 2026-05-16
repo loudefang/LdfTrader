@@ -100,3 +100,41 @@ export const DEFAULT_CONFIG: IndicatorConfig = {
   bollLines: ['upper', 'middle', 'lower'],
   macdLines: ['dif', 'dea', 'hist'],
 };
+
+// ── Backtest types ────────────────────────────────────────────────────────────
+
+export interface StrategyInfo {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface BacktestRequest {
+  symbol: string;
+  market: string;
+  period: string;
+  startDate: string;
+  endDate: string;
+  strategyId: string;
+}
+
+export interface BacktestTradeDetail {
+  openIndex: number;
+  closeIndex: number;       // -1 if position still open
+  openDate: string;
+  closeDate: string | null;
+  openPrice: number;
+  closePrice: number;
+  direction: string;        // "LONG" | "SHORT"
+  openReason: string;
+  closeReason: string | null;
+  closed: boolean;
+}
+
+export interface SimpleBacktestResponse {
+  symbol: string;
+  strategyId: string;
+  strategyName: string;
+  totalTrades: number;
+  trades: BacktestTradeDetail[];
+}

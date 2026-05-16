@@ -11,20 +11,28 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>strategy-core</artifactId>
+    <artifactId>backtest-service</artifactId>
     <packaging>jar</packaging>
-    <name>strategy-core</name>
-    <description>Strategy engine core - pure domain logic, no Spring Boot runtime</description>
+    <name>backtest-service</name>
+    <description>Backtesting engine - runs strategies on historical K-line data</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
         <dependency>
             <groupId>ai.jzhu.trading</groupId>
             <artifactId>trading-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <scope>provided</scope>
+            <groupId>ai.jzhu.trading</groupId>
+            <artifactId>strategy-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -37,4 +45,13 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

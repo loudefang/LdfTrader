@@ -23,8 +23,9 @@
         <module>trading-common</module>
         <module>strategy-core</module>
         <module>market-data-service</module>
-        <module>web-service</module>
         <module>indicator-service</module>
+        <module>backtest-service</module>
+        <module>web-service</module>
     </modules>
 
     <properties>

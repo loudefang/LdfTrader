@@ -48,6 +48,15 @@ const zh = {
     volume: '量',
     boll: '布林',
   },
+  backtest: {
+    strategy: '策略',
+    run: '运行回测',
+    clear: '清除',
+    loading: '回测中...',
+    tradesCount: (n: number) => `共 ${n} 笔交易`,
+    openLong: '开多',
+    closeLong: '平多',
+  },
 };
 
 export default zh;
