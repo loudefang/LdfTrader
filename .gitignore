@@ -1,0 +1,35 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+dependency-reduced-pom.xml
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# Env / secrets
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+logs/
+.pids/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (web-app)
+node_modules/
+dist/
+build/

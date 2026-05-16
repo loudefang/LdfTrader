@@ -1,0 +1,14 @@
+server:
+  port: 8181
+
+spring:
+  application:
+    name: web-service
+
+service:
+  market-data:
+    url: http://localhost:8182
+
+logging:
+  level:
+    ai.jzhu.trading.web: INFO
