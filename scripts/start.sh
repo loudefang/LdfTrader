@@ -176,6 +176,59 @@ start_spring_service() {
     exit 1
 }
 
+# --- 3.5. 启动 AKShare Python 旁车 (A股/港股 行情源) ---
+start_akshare_bridge() {
+    local pid_file="$PID_DIR/akshare-bridge.pid"
+    local log_file="$LOG_DIR/akshare-bridge.log"
+    local bridge_dir="$ROOT_DIR/akshare-bridge"
+    local venv_dir="$bridge_dir/.venv"
+    local port="${AKSHARE_BRIDGE_PORT:-8186}"
+
+    if [ -f "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
+        warn "akshare-bridge 已在运行 (PID $(cat "$pid_file"))，跳过"
+        return
+    fi
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        err "未找到 python3 命令，无法启动 akshare-bridge (A股/港股将不可用)"
+        return
+    fi
+
+    if [ ! -d "$venv_dir" ]; then
+        info "首次运行，为 akshare-bridge 创建 venv 并安装依赖..."
+        (cd "$bridge_dir" && python3 -m venv .venv)
+        "$venv_dir/bin/pip" install --upgrade pip >/dev/null
+        "$venv_dir/bin/pip" install -r "$bridge_dir/requirements.txt"
+        ok "akshare-bridge 依赖安装完成"
+    fi
+
+    info "启动 akshare-bridge (端口 $port)..."
+    (
+        cd "$bridge_dir"
+        nohup "$venv_dir/bin/python" -m uvicorn main:app \
+            --host 0.0.0.0 --port "$port" \
+            > "$log_file" 2>&1 &
+        echo $! > "$pid_file"
+    )
+    local pid
+    pid=$(cat "$pid_file")
+    info "akshare-bridge 进程 PID=$pid, 日志: $log_file"
+
+    info "等待 akshare-bridge 端口 $port 就绪..."
+    for i in {1..60}; do
+        if lsof -iTCP:"$port" -sTCP:LISTEN -P -n >/dev/null 2>&1; then
+            ok "akshare-bridge 就绪 (http://localhost:$port)"
+            return
+        fi
+        if ! kill -0 "$pid" 2>/dev/null; then
+            err "akshare-bridge 启动失败，请查看日志: $log_file"
+            return
+        fi
+        sleep 1
+    done
+    err "akshare-bridge 60 秒内未监听端口 $port，请查看日志: $log_file"
+}
+
 # --- 4. 启动前端 ---
 start_frontend() {
     local pid_file="$PID_DIR/web-app.pid"
@@ -225,6 +278,7 @@ echo "  LdfTrader  启动"
 echo "========================================="
 start_timescaledb
 maven_build
+start_akshare_bridge
 start_spring_service "market-data-service" 8182
 start_spring_service "indicator-service"   8183
 start_spring_service "backtest-service"    8185
@@ -237,11 +291,12 @@ echo ""
 echo "========================================="
 ok "全部服务启动完成"
 echo "========================================="
-echo "  TimescaleDB : localhost:${DB_PORT}"
-echo "  market-data : http://localhost:8182"
-echo "  indicator   : http://localhost:8183"
-echo "  backtest    : http://localhost:8185"
-echo "  web-service : http://localhost:8181"
+echo "  TimescaleDB     : localhost:${DB_PORT}"
+echo "  akshare-bridge  : http://localhost:${AKSHARE_BRIDGE_PORT:-8186}  (A股/港股)"
+echo "  market-data     : http://localhost:8182"
+echo "  indicator       : http://localhost:8183"
+echo "  backtest        : http://localhost:8185"
+echo "  web-service     : http://localhost:8181"
 if [ "$START_FRONTEND" = "true" ]; then
     echo "  web-app     : http://localhost:3000"
 fi

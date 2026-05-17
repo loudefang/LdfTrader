@@ -117,18 +117,22 @@ echo "========================================="
 echo "  LdfTrader  关闭"
 echo "========================================="
 
-stop_by_pidfile "web-app"            || stop_by_port "web-app"            3000
-stop_by_pidfile "web-service"        || stop_by_port "web-service"        8181
-stop_by_pidfile "backtest-service"   || stop_by_port "backtest-service"   8185
-stop_by_pidfile "indicator-service"  || stop_by_port "indicator-service"  8183
-stop_by_pidfile "market-data-service"|| stop_by_port "market-data-service" 8182
+AKSHARE_PORT="${AKSHARE_BRIDGE_PORT:-8186}"
+
+stop_by_pidfile "web-app"             || stop_by_port "web-app"             3000
+stop_by_pidfile "web-service"         || stop_by_port "web-service"         8181
+stop_by_pidfile "backtest-service"    || stop_by_port "backtest-service"    8185
+stop_by_pidfile "indicator-service"   || stop_by_port "indicator-service"   8183
+stop_by_pidfile "market-data-service" || stop_by_port "market-data-service" 8182
+stop_by_pidfile "akshare-bridge"      || stop_by_port "akshare-bridge"      "$AKSHARE_PORT"
 
 # 端口兜底
-stop_by_port "web-app"             3000
-stop_by_port "web-service"         8181
-stop_by_port "backtest-service"    8185
-stop_by_port "indicator-service"   8183
-stop_by_port "market-data-service" 8182
+stop_by_port "web-app"              3000
+stop_by_port "web-service"          8181
+stop_by_port "backtest-service"     8185
+stop_by_port "indicator-service"    8183
+stop_by_port "market-data-service"  8182
+stop_by_port "akshare-bridge"       "$AKSHARE_PORT"
 
 if [ "$STOP_DB" = "true" ]; then
     if docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER_NAME}$"; then

@@ -19,6 +19,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -26,7 +27,14 @@ import java.util.Optional;
 @Slf4j
 public class JdbcIndicatorRepository implements IndicatorRepository {
 
-    private static final ZoneId NY_ZONE = ZoneId.of("America/New_York");
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/New_York");
+
+    /** 不同市场用本地时区, 与 market-data-service 的 kline 表写入保持一致. */
+    private static final Map<String, ZoneId> MARKET_ZONES = Map.of(
+            "us", ZoneId.of("America/New_York"),
+            "cn", ZoneId.of("Asia/Shanghai"),
+            "hk", ZoneId.of("Asia/Hong_Kong")
+    );
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -37,8 +45,9 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
             return Optional.empty();
         }
 
-        Timestamp start = toTimestamp(startDate);
-        Timestamp end = toTimestamp(endDate);
+        ZoneId zone = resolveZone(market);
+        Timestamp start = toTimestamp(startDate, zone);
+        Timestamp end = toTimestamp(endDate, zone);
 
         var maRows = queryMa(symbol, market, start, end);
         if (maRows.size() != expectedCount) return Optional.empty();
@@ -86,6 +95,7 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
             return;
         }
 
+        final ZoneId zone = resolveZone(market);
         int n = dates.size();
 
         jdbcTemplate.batchUpdate(
@@ -93,7 +103,7 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setTimestamp(1, toTimestamp(dates.get(i)));
+                        ps.setTimestamp(1, toTimestamp(dates.get(i), zone));
                         ps.setString(2, symbol);
                         ps.setString(3, market);
                         setNullableDouble(ps, 4, values.ma().ma5List().get(i));
@@ -111,7 +121,7 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setTimestamp(1, toTimestamp(dates.get(i)));
+                        ps.setTimestamp(1, toTimestamp(dates.get(i), zone));
                         ps.setString(2, symbol);
                         ps.setString(3, market);
                         setNullableDouble(ps, 4, values.macd().difList().get(i));
@@ -127,7 +137,7 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setTimestamp(1, toTimestamp(dates.get(i)));
+                        ps.setTimestamp(1, toTimestamp(dates.get(i), zone));
                         ps.setString(2, symbol);
                         ps.setString(3, market);
                         setNullableDouble(ps, 4, values.rsi().rsi6List().get(i));
@@ -143,7 +153,7 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setTimestamp(1, toTimestamp(dates.get(i)));
+                        ps.setTimestamp(1, toTimestamp(dates.get(i), zone));
                         ps.setString(2, symbol);
                         ps.setString(3, market);
                         setNullableDouble(ps, 4, values.boll().upperList().get(i));
@@ -217,7 +227,12 @@ public class JdbcIndicatorRepository implements IndicatorRepository {
         }
     }
 
-    private static Timestamp toTimestamp(LocalDate date) {
-        return Timestamp.from(date.atStartOfDay(NY_ZONE).toInstant());
+    private static ZoneId resolveZone(String market) {
+        if (market == null) return DEFAULT_ZONE;
+        return MARKET_ZONES.getOrDefault(market.toLowerCase(), DEFAULT_ZONE);
+    }
+
+    private static Timestamp toTimestamp(LocalDate date, ZoneId zone) {
+        return Timestamp.from(date.atStartOfDay(zone).toInstant());
     }
 }

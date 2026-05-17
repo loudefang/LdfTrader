@@ -55,7 +55,10 @@ else
     fi
 fi
 
+check_service "akshare-bridge"      "${AKSHARE_BRIDGE_PORT:-8186}"
 check_service "market-data-service" 8182
+check_service "indicator-service"   8183
+check_service "backtest-service"    8185
 check_service "web-service"         8181
 check_service "web-app"             3000
 

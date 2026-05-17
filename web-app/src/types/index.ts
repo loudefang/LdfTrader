@@ -52,7 +52,7 @@ export interface KlineWithIndicatorsResponse {
   totalCount: number;
 }
 
-export type Market = 'us';
+export type Market = 'us' | 'cn' | 'hk';
 export type Period = 'daily' | 'weekly' | 'monthly';
 
 export interface KlineQuery {

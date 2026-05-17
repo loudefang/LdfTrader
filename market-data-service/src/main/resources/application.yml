@@ -17,6 +17,9 @@ fmp:
   api-key: ${FMP_API_KEY:}
   base-url: https://financialmodelingprep.com/stable
 
+akshare:
+  base-url: ${AKSHARE_BRIDGE_URL:http://localhost:8186}
+
 logging:
   level:
     ai.jzhu.trading.marketdata: INFO

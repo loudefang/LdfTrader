@@ -17,6 +17,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -24,7 +25,19 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class JdbcKlineRepository implements KlineRepository {
 
-    private static final ZoneId NY_ZONE = ZoneId.of("America/New_York");
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/New_York");
+
+    /**
+     * 不同市场的本地时区, 用于把日期映射到 timestamptz.
+     * 同一只标的的所有写入/查询都用相同时区, 因此缓存内部自洽;
+     * market 列也参与主键, 不同市场互不影响.
+     */
+    private static final Map<String, ZoneId> MARKET_ZONES = Map.of(
+            "us", ZoneId.of("America/New_York"),
+            "cn", ZoneId.of("Asia/Shanghai"),
+            "hk", ZoneId.of("Asia/Hong_Kong")
+    );
+
     private static final Set<String> ALLOWED_PERIODS = Set.of("daily", "weekly", "monthly");
 
     private final JdbcTemplate jdbcTemplate;
@@ -38,6 +51,7 @@ public class JdbcKlineRepository implements KlineRepository {
             LocalDate endDate
     ) {
         String table = resolveTable(period);
+        ZoneId zone = resolveZone(market);
         String sql = """
                 SELECT time, open, high, low, close, volume
                 FROM %s
@@ -45,10 +59,10 @@ public class JdbcKlineRepository implements KlineRepository {
                 ORDER BY time ASC
                 """.formatted(table);
 
-        Timestamp startTs = toMarketOpenTimestamp(startDate);
-        Timestamp endTs = toMarketCloseTimestamp(endDate);
+        Timestamp startTs = toMarketOpenTimestamp(startDate, zone);
+        Timestamp endTs = toMarketCloseTimestamp(endDate, zone);
 
-        return jdbcTemplate.query(sql, klineRowMapper(), symbol, market, startTs, endTs);
+        return jdbcTemplate.query(sql, klineRowMapper(zone), symbol, market, startTs, endTs);
     }
 
     @Override
@@ -57,6 +71,7 @@ public class JdbcKlineRepository implements KlineRepository {
             return 0;
         }
         String table = resolveTable(period);
+        ZoneId zone = resolveZone(market);
         String sql = """
                 INSERT INTO %s (time, symbol, market, open, high, low, close, volume)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -67,7 +82,7 @@ public class JdbcKlineRepository implements KlineRepository {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 Kline k = klines.get(i);
-                ps.setTimestamp(1, toMarketOpenTimestamp(k.date()));
+                ps.setTimestamp(1, toMarketOpenTimestamp(k.date(), zone));
                 ps.setString(2, symbol);
                 ps.setString(3, market);
                 ps.setDouble(4, k.open());
@@ -98,19 +113,24 @@ public class JdbcKlineRepository implements KlineRepository {
         return "kline_" + normalized;
     }
 
-    private Timestamp toMarketOpenTimestamp(LocalDate date) {
-        ZonedDateTime zdt = ZonedDateTime.of(date, LocalTime.of(0, 0), NY_ZONE);
+    private ZoneId resolveZone(String market) {
+        if (market == null) return DEFAULT_ZONE;
+        return MARKET_ZONES.getOrDefault(market.toLowerCase(), DEFAULT_ZONE);
+    }
+
+    private Timestamp toMarketOpenTimestamp(LocalDate date, ZoneId zone) {
+        ZonedDateTime zdt = ZonedDateTime.of(date, LocalTime.of(0, 0), zone);
         return Timestamp.from(zdt.toInstant());
     }
 
-    private Timestamp toMarketCloseTimestamp(LocalDate date) {
-        ZonedDateTime zdt = ZonedDateTime.of(date, LocalTime.of(23, 59, 59), NY_ZONE);
+    private Timestamp toMarketCloseTimestamp(LocalDate date, ZoneId zone) {
+        ZonedDateTime zdt = ZonedDateTime.of(date, LocalTime.of(23, 59, 59), zone);
         return Timestamp.from(zdt.toInstant());
     }
 
-    private RowMapper<Kline> klineRowMapper() {
+    private RowMapper<Kline> klineRowMapper(ZoneId zone) {
         return (rs, rowNum) -> {
-            LocalDate date = rs.getTimestamp("time").toInstant().atZone(NY_ZONE).toLocalDate();
+            LocalDate date = rs.getTimestamp("time").toInstant().atZone(zone).toLocalDate();
             return new Kline(
                     date,
                     rs.getDouble("open"),

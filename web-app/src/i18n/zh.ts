@@ -17,7 +17,7 @@ const zh = {
     endDate: '结束日期',
     query: '查询',
     querying: '查询中...',
-    markets: { us: '美股' } as Record<string, string>,
+    markets: { us: '美股', cn: 'A股', hk: '港股' } as Record<string, string>,
     periods: { daily: '日K', weekly: '周K', monthly: '月K' } as Record<string, string>,
   },
   chart: {

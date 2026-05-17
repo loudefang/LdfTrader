@@ -17,7 +17,7 @@ const en = {
     endDate: 'End Date',
     query: 'Search',
     querying: 'Loading...',
-    markets: { us: 'US Stock' } as Record<string, string>,
+    markets: { us: 'US Stock', cn: 'A-Share', hk: 'HK Stock' } as Record<string, string>,
     periods: { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' } as Record<string, string>,
   },
   chart: {

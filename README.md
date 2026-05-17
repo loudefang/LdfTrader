@@ -1,19 +1,26 @@
 # LdfTrader
 
-量化交易平台：FMP 行情数据 + TimescaleDB 本地缓存 + Spring Boot 微服务 + React 前端。
+量化交易平台：多市场行情 (美股 / A股 / 港股) + TimescaleDB 本地缓存 + Spring Boot 微服务 + React 前端。
 
 ```
-┌──────────────┐     ┌──────────────┐     ┌────────────────────┐     ┌──────────────┐
-│   web-app    │ ──> │ web-service  │ ──> │ market-data-service│ ──> │  FMP API     │
-│  React :3000 │     │ Boot   :8181 │     │ Boot         :8182 │     │              │
-└──────────────┘     └──────────────┘     └──────────┬─────────┘     └──────────────┘
-                                                     │
-                                                     ▼
+                                                          ┌──────────────┐
+                                                       ┌─>│  FMP API     │ (美股)
+┌──────────────┐     ┌──────────────┐     ┌────────────┴────────┐  └──────────────┘
+│   web-app    │ ──> │ web-service  │ ──> │ market-data-service │
+│  React :3000 │     │ Boot   :8181 │     │ Boot         :8182  │  ┌──────────────────┐
+└──────────────┘     └──────────────┘     └────────────┬────────┘─>│ akshare-bridge   │ (A股/港股)
+                                                       │           │ FastAPI   :8186  │
+                                                       ▼           └──────────────────┘
                                           ┌─────────────────────┐
                                           │ TimescaleDB (Docker)│
                                           │             :5432   │
                                           └─────────────────────┘
 ```
+
+行情源按 `market` 自动路由 ([MarketDataProviderRouter](market-data-service/src/main/java/ai/jzhu/trading/marketdata/infrastructure/external/MarketDataProviderRouter.java))：
+
+- `us` → FMP (需 API Key)
+- `cn` / `hk` → 本地 AKShare 旁车 ([akshare-bridge/](akshare-bridge/))，**完全免费、无需 Key**
 
 ## 模块概览
 
@@ -21,8 +28,11 @@
 |---|---|---|
 | `trading-common` | 共享 DTO (KlineResponse, ErrorResponse) | — |
 | `strategy-core` | 策略引擎核心 (占位) | — |
-| `market-data-service` | FMP 接入 + TimescaleDB 缓存 | 8182 |
+| `market-data-service` | 多市场行情接入 + TimescaleDB 缓存 | 8182 |
+| `indicator-service` | 技术指标计算 (MA / MACD / RSI / BOLL) | 8183 |
+| `backtest-service` | 回测引擎 | 8185 |
 | `web-service` | 前端 BFF 聚合层 | 8181 |
+| `akshare-bridge` | A股 / 港股 行情旁车 (Python FastAPI + AKShare) | 8186 |
 | `web-app` | React 前端 (Vite + ECharts) | 3000 |
 
 ---
@@ -59,15 +69,21 @@
 ## 首次配置
 
 ```bash
-# 1. 填入 FMP API Key
+# 1. (仅美股需要) 填入 FMP API Key
 vi .env
-#    FMP_API_KEY=你的key   <-- 必填
+#    FMP_API_KEY=你的key   <-- 美股查询必填; A股/港股不需要
 
-# 2. 一键启动 (首次会自动 docker run、mvn install、npm install)
+# 2. (A股/港股需要) 安装 Python 3.10+ (启动脚本会自动建 venv 并安装 akshare)
+
+# 3. 一键启动 (首次会自动 docker run、mvn install、npm install、pip install)
 ./scripts/start.sh
 ```
 
-打开浏览器访问 <http://localhost:3000>，输入 `TSLA` 点击查询。
+打开浏览器访问 <http://localhost:3000>：
+
+- 美股：选择「美股」，输入 `TSLA`、`AAPL` 等
+- A股：选择「A股」，输入 6 位代码，如 `600519` (贵州茅台)、`000001` (平安银行)、`300750` (宁德时代)
+- 港股：选择「港股」，输入 5 位代码，如 `00700` (腾讯)、`09988` (阿里巴巴)
 
 ---
 
@@ -134,12 +150,22 @@ tail -f logs/web-app.log                # 看 Vite 输出
 # 通过 BFF (推荐, 经过 CORS)
 curl "http://localhost:8181/api/web/kline?symbol=TSLA&startDate=2024-01-01&endDate=2024-03-31"
 
-# 直连 market-data-service
-curl "http://localhost:8182/api/market-data/kline?symbol=AAPL&period=daily"
+# 直连 market-data-service (美股, FMP)
+curl "http://localhost:8182/api/market-data/kline?symbol=AAPL&market=us&period=daily"
+
+# 直连 market-data-service (A股, AKShare)
+curl "http://localhost:8182/api/market-data/kline?symbol=600519&market=cn&period=daily&startDate=2024-01-01&endDate=2024-12-31"
+
+# 直连 market-data-service (港股, AKShare)
+curl "http://localhost:8182/api/market-data/kline?symbol=00700&market=hk&period=daily&startDate=2024-01-01&endDate=2024-12-31"
+
+# 直连 akshare-bridge (排错用)
+curl "http://localhost:8186/health"
+curl "http://localhost:8186/historical?symbol=600519&market=cn&period=daily&start=2024-01-01&end=2024-12-31"
 
 # 周 K / 月 K
-curl "http://localhost:8182/api/market-data/kline?symbol=NVDA&period=weekly"
-curl "http://localhost:8182/api/market-data/kline?symbol=NVDA&period=monthly"
+curl "http://localhost:8182/api/market-data/kline?symbol=NVDA&market=us&period=weekly"
+curl "http://localhost:8182/api/market-data/kline?symbol=NVDA&market=us&period=monthly"
 ```
 
 ### Docker
@@ -168,7 +194,9 @@ docker logs -f trading-timescaledb   # 看 DB 日志
 
 | 现象 | 处理 |
 |---|---|
-| 启动脚本报 `FMP_API_KEY is missing` | 编辑 `.env`，填入 [financialmodelingprep.com](https://financialmodelingprep.com/) 申请的 key |
+| 启动脚本报 `FMP_API_KEY is missing` | 仅查询美股时需要，编辑 `.env` 填入 [financialmodelingprep.com](https://financialmodelingprep.com/) 申请的 key (A股/港股不需要) |
+| 选 A股/港股查询报「无法从 AKShare bridge 获取行情」 | `./scripts/status.sh` 查看 `akshare-bridge` 是否在 :8186; 看 `logs/akshare-bridge.log` |
+| A股 6 位代码查不到数据 | 确认代码格式 (上交所 6 开头、深交所 0/3 开头)；AKShare 接口偶有限流，重试即可 |
 | 浏览器报 CORS 错误 | 确认前端跑在 `:3000`（CORS 白名单写死），不要用 `127.0.0.1` |
 | 端口被占用 | `./scripts/stop.sh` 一键清理；或 `lsof -i :8181` 找出占用者 |
 | `[FMP ERROR] status=429` | FMP 免费额度限流，等几分钟或升级套餐 |
@@ -188,11 +216,14 @@ LdfTrader/
 │   ├── start.sh                  # 一键启动
 │   ├── stop.sh                   # 一键关闭
 │   └── status.sh                 # 状态查看
-├── db/init/01_init_kline.sql     # K线表 / hypertable 初始化
+├── db/init/                      # K线表 / hypertable / 指标表 初始化 SQL
 ├── trading-common/               # 共享 DTO
-├── strategy-core/                # 策略核心 (占位)
-├── market-data-service/          # 行情服务 :8182
+├── strategy-core/                # 策略核心
+├── market-data-service/          # 行情服务 :8182  (按 market 路由 FMP / AKShare)
+├── indicator-service/            # 指标服务 :8183
+├── backtest-service/             # 回测服务 :8185
 ├── web-service/                  # BFF      :8181
+├── akshare-bridge/               # A股/港股 行情旁车 (Python) :8186
 ├── web-app/                      # React 前端 :3000
 ├── logs/                         # 启动脚本输出 (gitignored)
 └── .pids/                        # 进程 PID 文件 (gitignored)

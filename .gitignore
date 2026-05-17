@@ -33,3 +33,8 @@ Thumbs.db
 node_modules/
 dist/
 build/
+
+# Python (akshare-bridge)
+.venv/
+__pycache__/
+*.pyc
